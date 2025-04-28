@@ -4,6 +4,12 @@
 # curl and jq is required 
 #
 
+SCOPE="channels"
+
+if [ "$1" = "-g" ]; then
+	SCOPE="guilds"
+fi
+
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 CLIENT_FILE="$SCRIPT_DIR/client.json"
@@ -20,7 +26,7 @@ else
 fi
 
 while true; do
-	RESPONSE=$(curl -H "Authorization: $TOKEN"  "https://discord.com/api/v9/channels/$CHANNEL/messages/search?author_id=$AUTHOR")
+	RESPONSE=$(curl -H "Authorization: $TOKEN"  "https://discord.com/api/v9/$SCOPE/$CHANNEL/messages/search?author_id=$AUTHOR")
 
 	TOTAL_RESULTS=$(echo "$RESPONSE" | jq -r '.total_results')
 
@@ -30,7 +36,8 @@ while true; do
 
 	echo "$RESPONSE" | jq -c '.messages[]' | while read -r msg; do
 		ID=$(echo "$msg" | jq -r '.[0].id')
-		curl -X DELETE -H "Authorization: $TOKEN" "https://discord.com/api/v9/channels/$CHANNEL/messages/$ID"
+		CHANNEL_ID=$(echo "$msg" | jq -r '.[0].channel_id')
+		curl -X DELETE -H "Authorization: $TOKEN" "https://discord.com/api/v9/channels/$CHANNEL_ID/messages/$ID"
 		sleep 5
 	done
 	echo
